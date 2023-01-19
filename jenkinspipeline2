@@ -1,0 +1,29 @@
+node
+{
+
+def mavenHome = tool name: 'maven3.8.6'
+properties([pipelineTriggers([pollSCM('* * * * *')])])
+
+stage('Check out code')
+{
+ git branch: 'development', credentialsId: '5f944dc3-9c1e-4cb0-be72-7b86d9d1749d', url: 'https://github.com/Dinesh-ec-project/maven-web-application.git'
+}
+stage('Build')
+{
+ sh "${mavenHome}/bin/mvn clean package"
+}
+stage('Execute SonarQube Report')
+{
+ sh "${mavenHome}/bin/mvn sonar:sonar"
+}
+stage('Upload artifacts to Nexus')
+{
+ sh "${mavenHome}/bin/mvn deploy"
+}
+stage('Deploy application to Tomcat')
+{
+ sshagent(['275e576f-8dfe-4dea-9ae7-3ef645547204']) {
+    sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@172.31.34.27:/opt/apache-tomcat-9.0.71/webapps"
+ }
+ }
+}
